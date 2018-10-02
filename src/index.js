@@ -45,8 +45,13 @@ const INTERVENTION_TECHNIQUE = "Intervention Technique";
 const PSYCHOLOGICAL_QUESTIONS = "Psychological Questions";
 
 const resetControl = control => {
+  if (state["selected" + control.name] === -1) {
+    return;
+  }
+
   control.innerHTML = DEFAULT_OPTION;
   state["selected" + control.name] = -1;
+  control.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
 const getClassName = elem => {
@@ -77,19 +82,19 @@ const getItemData = section => {
 };
 
 const processChange = e => {
+  resetControl(areaSelect);
   state.selectedProcess = e.target.selectedIndex - 1;
   populateAreas();
-  resetControl(techniqueSelect);
-  resetControl(questionSelect);
 };
 
 const areaChange = e => {
+  resetControl(techniqueSelect);
   state.selectedArea = e.target.selectedIndex - 1;
   populateTechniques();
-  resetControl(questionSelect);
 };
 
 const techniqueChange = e => {
+  resetControl(questionSelect);
   state.selectedTechnique = e.target.selectedIndex - 1;
   populateQuestions();
 };
