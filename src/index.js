@@ -63,34 +63,51 @@ const getClassName = elem => {
 };
 
 const getItemData = section => {
+  let data = {};
+
   switch (section) {
     case PSYCHOLOGICAL_PROCESSES:
-      return state.itemStore[section];
+      data = state.itemStore[section];
+      break;
     case SOCIAL_AREA:
-      return getItemData(PSYCHOLOGICAL_PROCESSES)[state.selectedProcess][
-        section
-      ];
+      data =
+        state.selectedProcess > -1
+          ? getItemData(PSYCHOLOGICAL_PROCESSES)[state.selectedProcess][section]
+          : getItemData(PSYCHOLOGICAL_PROCESSES);
+      break;
     case INTERVENTION_TECHNIQUE:
-      return getItemData(SOCIAL_AREA)[state.selectedArea][section];
+      data =
+        state.selectedArea > -1
+          ? getItemData(SOCIAL_AREA)[state.selectedArea][section]
+          : getItemData(SOCIAL_AREA);
+      break;
     case PSYCHOLOGICAL_QUESTIONS:
-      return getItemData(INTERVENTION_TECHNIQUE)[state.selectedTechnique][
-        section
-      ];
+      data =
+        state.selectedTechnique > -1
+          ? getItemData(INTERVENTION_TECHNIQUE)[state.selectedTechnique][
+              section
+            ]
+          : getItemData(INTERVENTION_TECHNIQUE);
+      break;
     default:
       break;
   }
+
+  return data;
 };
 
 const processChange = e => {
   resetControl(areaSelect);
   state.selectedProcess = e.target.selectedIndex - 1;
   populateAreas();
+  populateQuestions();
 };
 
 const areaChange = e => {
   resetControl(techniqueSelect);
   state.selectedArea = e.target.selectedIndex - 1;
   populateTechniques();
+  populateQuestions();
 };
 
 const techniqueChange = e => {
@@ -138,16 +155,50 @@ const populateTechniques = () => {
 };
 
 const populateQuestions = () => {
+  let questionSet = new Set();
+
   questionSelect.innerHTML = DEFAULT_OPTION;
 
   if (state.selectedTechnique > -1) {
     const questions = getItemData(PSYCHOLOGICAL_QUESTIONS);
-    questions.forEach((element, idx) => {
-      questionSelect.innerHTML += `<option value=.${getClassName(
-        element
-      )}>${element}</option>`;
+    questions.forEach((question, idx) => {
+      questionSet.add(question);
+    });
+  } else if (state.selectedArea > -1) {
+    const techniques = getItemData(INTERVENTION_TECHNIQUE);
+    techniques.forEach(element => {
+      element[PSYCHOLOGICAL_QUESTIONS].forEach(question => {
+        questionSet.add(question);
+      });
+    });
+  } else if (state.selectedProcess > -1) {
+    const socialAreas = getItemData(SOCIAL_AREA);
+    socialAreas.forEach(socialArea => {
+      socialArea[INTERVENTION_TECHNIQUE].forEach(technique => {
+        technique[PSYCHOLOGICAL_QUESTIONS].forEach(question => {
+          questionSet.add(question);
+        });
+      });
+    });
+  } else {
+    const processes = getItemData(PSYCHOLOGICAL_PROCESSES);
+    processes.forEach(element => {
+      const socialAreas = element[SOCIAL_AREA];
+      socialAreas.forEach(socialArea => {
+        socialArea[INTERVENTION_TECHNIQUE].forEach(technique => {
+          technique[PSYCHOLOGICAL_QUESTIONS].forEach(question => {
+            questionSet.add(question);
+          });
+        });
+      });
     });
   }
+
+  [...questionSet].forEach(question => {
+    questionSelect.innerHTML += `<option value=.${getClassName(question)}>
+        ${question}
+      </option>`;
+  });
 };
 
 document.getElementById("app").innerHTML = appTemplate;
@@ -165,3 +216,4 @@ questionSelect.addEventListener("change", questionChange);
 state.itemStore = window.itemsdb;
 
 populateProcesses();
+populateQuestions();
